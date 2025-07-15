@@ -1,9 +1,13 @@
 export interface User {
   id: string;
   username: string;
-  email: string;
-  avatar?: string;
+  displayName: string;
+  email?: string;
   bio?: string;
+  avatar?: string;
+  followers: number;
+  following: number;
+  verified: boolean;
   createdAt: Date;
 }
 

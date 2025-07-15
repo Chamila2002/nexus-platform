@@ -1,5 +1,6 @@
 import React from 'react';
 import { Home, Compass, Bell, MessageCircle, User, Plus, MoreHorizontal } from 'lucide-react';
+import UserSwitcher from './UserSwitcher';
 
 const Sidebar: React.FC = () => {
   const menuItems = [
@@ -73,16 +74,7 @@ const Sidebar: React.FC = () => {
 
         {/* User Profile Section */}
         <div className="p-4 border-t border-gray-100">
-          <div className="flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-semibold text-sm">JD</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">John Doe</p>
-              <p className="text-xs text-gray-500 truncate">@johndoe</p>
-            </div>
-            <MoreHorizontal className="h-4 w-4 text-gray-400" />
-          </div>
+          <UserSwitcher />
         </div>
       </div>
     </aside>
