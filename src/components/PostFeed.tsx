@@ -1,9 +1,12 @@
 import React from 'react';
+import { useState } from 'react';
 import { Heart, MessageCircle, Share, MoreHorizontal } from 'lucide-react';
 import { Post } from '../types';
 import { useUser } from '../contexts/UserContext';
 import { usePosts } from '../contexts/PostContext';
+import { useComments } from '../contexts/CommentContext';
 import { formatDate } from '../utils/formatters';
+import CommentModal from './CommentModal';
 
 interface PostFeedProps {
   posts: Post[];
@@ -12,6 +15,8 @@ interface PostFeedProps {
 const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
   const { currentUser, getAllUsers } = useUser();
   const { likePost, unlikePost } = usePosts();
+  const { getCommentsByPostId } = useComments();
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const allUsers = getAllUsers();
 
   const getUserById = (userId: string) => {
@@ -29,6 +34,14 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
     }
   };
 
+  const handleCommentClick = (post: Post) => {
+    setSelectedPost(post);
+  };
+
+  const closeCommentModal = () => {
+    setSelectedPost(null);
+  };
+
   if (posts.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
@@ -42,6 +55,7 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
       {posts.map((post) => {
         const author = getUserById(post.userId);
         const isLiked = currentUser ? post.likedBy.includes(currentUser.id) : false;
+        const commentCount = getCommentsByPostId(post.id).length;
         
         if (!author) return null;
 
@@ -91,11 +105,14 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
                   
                   {/* Post Actions */}
                   <div className="flex items-center justify-between mt-4 max-w-md">
-                    <button className="flex items-center space-x-2 text-gray-500 hover:text-blue-600 transition-colors group">
+                    <button 
+                      onClick={() => handleCommentClick(post)}
+                      className="flex items-center space-x-2 text-gray-500 hover:text-blue-600 transition-colors group"
+                    >
                       <div className="p-2 rounded-full group-hover:bg-blue-50 transition-colors">
                         <MessageCircle className="h-5 w-5" />
                       </div>
-                      <span className="text-sm">{post.comments}</span>
+                      <span className="text-sm">{commentCount}</span>
                     </button>
                     
                     <button className="flex items-center space-x-2 text-gray-500 hover:text-green-600 transition-colors group">
@@ -131,6 +148,15 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
           </div>
         );
       })}
+      
+      {/* Comment Modal */}
+      {selectedPost && (
+        <CommentModal
+          post={selectedPost}
+          isOpen={!!selectedPost}
+          onClose={closeCommentModal}
+        />
+      )}
     </div>
   );
 };

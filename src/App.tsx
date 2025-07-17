@@ -1,6 +1,7 @@
 import React from 'react';
-import { UserProvider } from './contexts/UserContext.tsx';
-import { PostProvider } from './contexts/PostContext.tsx';
+import { UserProvider } from './contexts/UserContext';
+import { PostProvider } from './contexts/PostContext';
+import { CommentProvider } from './contexts/CommentContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 
@@ -8,9 +9,11 @@ function App() {
   return (
     <UserProvider>
       <PostProvider>
-        <Layout>
-          <Home />
-        </Layout>
+        <CommentProvider>
+          <Layout>
+            <Home />
+          </Layout>
+        </CommentProvider>
       </PostProvider>
     </UserProvider>
   );
