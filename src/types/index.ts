@@ -15,9 +15,12 @@ export interface Post {
   id: string;
   userId: string;
   content: string;
-  imageUrl?: string;
+  timestamp: Date;
   likes: number;
-  comments: Comment[];
+  comments: number;
+  shares: number;
+  likedBy: string[];
+  imageUrl?: string;
   createdAt: Date;
 }
 
