@@ -3,12 +3,17 @@ import { Home, Compass, Bell, MessageCircle, User, Plus, MoreHorizontal } from '
 import { useUser } from '../contexts/UserContext';
 import UserSwitcher from './UserSwitcher';
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  currentPage?: string;
+  onPageChange?: (page: 'home' | 'explore') => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange }) => {
   const { currentUser } = useUser();
   
   const menuItems = [
-    { icon: Home, label: 'Home', active: true },
-    { icon: Compass, label: 'Explore', active: false },
+    { icon: Home, label: 'Home', key: 'home' },
+    { icon: Compass, label: 'Explore', key: 'explore' },
     { icon: Bell, label: 'Notifications', active: false },
     { icon: MessageCircle, label: 'Messages', active: false },
     { icon: User, label: 'Profile', active: false },
@@ -44,27 +49,33 @@ const Sidebar: React.FC = () => {
         {/* Navigation Menu */}
         <nav className="flex-1 p-4">
           <ul className="space-y-1">
-            {menuItems.map(({ icon: Icon, label, active }) => (
+            {menuItems.map(({ icon: Icon, label, key, active }) => (
               <li key={label}>
                 <button
-                  onClick={label === 'Profile' ? handleProfileClick : undefined}
+                  onClick={() => {
+                    if (key && onPageChange) {
+                      onPageChange(key as 'home' | 'explore');
+                    } else if (label === 'Profile') {
+                      handleProfileClick();
+                    }
+                  }}
                   className={`w-full flex items-center space-x-4 px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
-                    active
+                    (key && currentPage === key) || active
                       ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 shadow-sm border border-purple-100'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >
                   <div className={`p-1 rounded-lg transition-all duration-200 ${
-                    active 
+                    (key && currentPage === key) || active
                       ? 'bg-gradient-to-r from-purple-100 to-blue-100' 
                       : 'group-hover:bg-gray-100'
                   }`}>
                     <Icon className={`h-5 w-5 transition-all duration-200 ${
-                      active ? 'text-purple-600' : 'text-gray-600 group-hover:text-gray-800'
+                      (key && currentPage === key) || active ? 'text-purple-600' : 'text-gray-600 group-hover:text-gray-800'
                     }`} />
                   </div>
                   <span className="font-medium text-base">{label}</span>
-                  {active && (
+                  {((key && currentPage === key) || active) && (
                     <div className="ml-auto w-2 h-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full"></div>
                   )}
                 </button>
