@@ -7,6 +7,7 @@ import { usePosts } from '../contexts/PostContext';
 import { useComments } from '../contexts/CommentContext';
 import { formatDate } from '../utils/formatters';
 import CommentModal from './CommentModal';
+import ShareModal from './ShareModal';
 
 interface PostFeedProps {
   posts: Post[];
@@ -14,9 +15,10 @@ interface PostFeedProps {
 
 const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
   const { currentUser, getAllUsers } = useUser();
-  const { likePost, unlikePost } = usePosts();
+  const { likePost, unlikePost, sharePost } = usePosts();
   const { getCommentsByPostId } = useComments();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [selectedSharePost, setSelectedSharePost] = useState<Post | null>(null);
   const allUsers = getAllUsers();
 
   const getUserById = (userId: string) => {
@@ -40,6 +42,18 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
 
   const closeCommentModal = () => {
     setSelectedPost(null);
+  };
+
+  const handleShareClick = (post: Post) => {
+    setSelectedSharePost(post);
+  };
+
+  const closeShareModal = () => {
+    setSelectedSharePost(null);
+  };
+
+  const handleShare = (postId: string) => {
+    sharePost(postId);
   };
 
   if (posts.length === 0) {
@@ -115,7 +129,10 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
                       <span className="text-sm">{commentCount}</span>
                     </button>
                     
-                    <button className="flex items-center space-x-2 text-gray-500 hover:text-green-600 transition-colors group">
+                    <button 
+                      onClick={() => handleShareClick(post)}
+                      className="flex items-center space-x-2 text-gray-500 hover:text-green-600 transition-colors group"
+                    >
                       <div className="p-2 rounded-full group-hover:bg-green-50 transition-colors">
                         <Share className="h-5 w-5" />
                       </div>
@@ -155,6 +172,16 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
           post={selectedPost}
           isOpen={!!selectedPost}
           onClose={closeCommentModal}
+        />
+      )}
+      
+      {/* Share Modal */}
+      {selectedSharePost && (
+        <ShareModal
+          post={selectedSharePost}
+          isOpen={!!selectedSharePost}
+          onClose={closeShareModal}
+          onShare={() => handleShare(selectedSharePost.id)}
         />
       )}
     </div>

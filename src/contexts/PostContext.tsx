@@ -7,6 +7,7 @@ interface PostContextType {
   addPost: (content: string, userId: string) => void;
   likePost: (postId: string, userId: string) => void;
   unlikePost: (postId: string, userId: string) => void;
+  sharePost: (postId: string) => void;
   isLoading: boolean;
 }
 
@@ -57,11 +58,25 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
     );
   };
 
+  const sharePost = (postId: string) => {
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.id === postId
+          ? {
+              ...post,
+              shares: post.shares + 1,
+            }
+          : post
+      )
+    );
+  };
+
   const value: PostContextType = {
     posts,
     addPost,
     likePost,
     unlikePost,
+    sharePost,
     isLoading,
   };
 
