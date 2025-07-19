@@ -9,6 +9,7 @@ export interface User {
   following: number;
   verified: boolean;
   createdAt: Date;
+  followedBy: string[];
 }
 
 export interface Post {

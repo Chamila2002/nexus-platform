@@ -21,17 +21,11 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const addPost = async (content: string, userId: string) => {
-    setIsLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
       const newPost = createPost(userId, content);
       setPosts(prevPosts => [newPost, ...prevPosts]);
     } catch (error) {
       console.error('Failed to add post:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

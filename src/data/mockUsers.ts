@@ -12,6 +12,7 @@ export const mockUsers: User[] = [
     following: 890,
     verified: true,
     createdAt: new Date('2022-03-15'),
+    followedBy: ['2', '3', '4', '5'],
   },
   {
     id: '2',
@@ -24,6 +25,7 @@ export const mockUsers: User[] = [
     following: 1200,
     verified: false,
     createdAt: new Date('2021-11-20'),
+    followedBy: ['1', '3', '5'],
   },
   {
     id: '3',
@@ -36,6 +38,7 @@ export const mockUsers: User[] = [
     following: 650,
     verified: true,
     createdAt: new Date('2020-08-10'),
+    followedBy: ['1', '2', '4', '5'],
   },
   {
     id: '4',
@@ -48,6 +51,7 @@ export const mockUsers: User[] = [
     following: 980,
     verified: false,
     createdAt: new Date('2023-01-05'),
+    followedBy: ['1', '2', '3'],
   },
   {
     id: '5',
@@ -60,6 +64,7 @@ export const mockUsers: User[] = [
     following: 1500,
     verified: true,
     createdAt: new Date('2019-06-12'),
+    followedBy: ['1', '2', '3', '4'],
   },
 ];
 

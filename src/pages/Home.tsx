@@ -1,8 +1,8 @@
 import React from 'react';
 import { useUser } from '../contexts/UserContext';
-import { usePosts } from '../contexts/PostContext.tsx';
-import PostCreator from '../components/PostCreator.tsx';
-import PostFeed from '../components/PostFeed.tsx';
+import { usePosts } from '../contexts/PostContext';
+import PostCreator from '../components/PostCreator';
+import PostFeed from '../components/PostFeed';
 
 const Home: React.FC = () => {
   const { currentUser } = useUser();

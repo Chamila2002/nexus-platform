@@ -1,8 +1,11 @@
 import React from 'react';
 import { Home, Compass, Bell, MessageCircle, User, Plus, MoreHorizontal } from 'lucide-react';
+import { useUser } from '../contexts/UserContext';
 import UserSwitcher from './UserSwitcher';
 
 const Sidebar: React.FC = () => {
+  const { currentUser } = useUser();
+  
   const menuItems = [
     { icon: Home, label: 'Home', active: true },
     { icon: Compass, label: 'Explore', active: false },
@@ -11,6 +14,11 @@ const Sidebar: React.FC = () => {
     { icon: User, label: 'Profile', active: false },
     { icon: MoreHorizontal, label: 'More', active: false },
   ];
+
+  const handleProfileClick = () => {
+    // For now, just log - in a real app this would navigate
+    console.log('Profile clicked - navigation would happen here');
+  };
 
   return (
     <aside className="w-64 bg-white h-screen sticky top-0 border-r border-gray-200 hidden lg:block overflow-y-auto">
@@ -39,6 +47,7 @@ const Sidebar: React.FC = () => {
             {menuItems.map(({ icon: Icon, label, active }) => (
               <li key={label}>
                 <button
+                  onClick={label === 'Profile' ? handleProfileClick : undefined}
                   className={`w-full flex items-center space-x-4 px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
                     active
                       ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 shadow-sm border border-purple-100'

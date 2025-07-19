@@ -10,6 +10,10 @@ interface UserContextType {
   logout: () => void;
   switchUser: (userId: string) => void;
   getAllUsers: () => User[];
+  followUser: (userId: string) => void;
+  unfollowUser: (userId: string) => void;
+  isFollowing: (userId: string) => boolean;
+  getUserById: (userId: string) => User | undefined;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -77,6 +81,57 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const getAllUsers = () => mockUsers;
 
+  const followUser = (userId: string) => {
+    if (!currentUser || userId === currentUser.id) return;
+    
+    // Update the target user's followers
+    const targetUserIndex = mockUsers.findIndex(u => u.id === userId);
+    if (targetUserIndex !== -1) {
+      if (!mockUsers[targetUserIndex].followedBy.includes(currentUser.id)) {
+        mockUsers[targetUserIndex].followedBy.push(currentUser.id);
+        mockUsers[targetUserIndex].followers += 1;
+      }
+    }
+    
+    // Update current user's following count
+    const currentUserIndex = mockUsers.findIndex(u => u.id === currentUser.id);
+    if (currentUserIndex !== -1) {
+      mockUsers[currentUserIndex].following += 1;
+      setCurrentUser({ ...mockUsers[currentUserIndex] });
+    }
+  };
+
+  const unfollowUser = (userId: string) => {
+    if (!currentUser || userId === currentUser.id) return;
+    
+    // Update the target user's followers
+    const targetUserIndex = mockUsers.findIndex(u => u.id === userId);
+    if (targetUserIndex !== -1) {
+      const followIndex = mockUsers[targetUserIndex].followedBy.indexOf(currentUser.id);
+      if (followIndex !== -1) {
+        mockUsers[targetUserIndex].followedBy.splice(followIndex, 1);
+        mockUsers[targetUserIndex].followers = Math.max(0, mockUsers[targetUserIndex].followers - 1);
+      }
+    }
+    
+    // Update current user's following count
+    const currentUserIndex = mockUsers.findIndex(u => u.id === currentUser.id);
+    if (currentUserIndex !== -1) {
+      mockUsers[currentUserIndex].following = Math.max(0, mockUsers[currentUserIndex].following - 1);
+      setCurrentUser({ ...mockUsers[currentUserIndex] });
+    }
+  };
+
+  const isFollowing = (userId: string): boolean => {
+    if (!currentUser) return false;
+    const targetUser = mockUsers.find(u => u.id === userId);
+    return targetUser ? targetUser.followedBy.includes(currentUser.id) : false;
+  };
+
+  const getUserById = (userId: string): User | undefined => {
+    return mockUsers.find(u => u.id === userId);
+  };
+
   const value: UserContextType = {
     currentUser,
     isAuthenticated: !!currentUser,
@@ -85,6 +140,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     logout,
     switchUser,
     getAllUsers,
+    followUser,
+    unfollowUser,
+    isFollowing,
+    getUserById,
   };
 
   return (

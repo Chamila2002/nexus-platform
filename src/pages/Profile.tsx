@@ -16,7 +16,7 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-6 px-4">
+    <div className="py-6 px-4">
       <UserProfile 
         user={currentUser} 
         isCurrentUser={true}

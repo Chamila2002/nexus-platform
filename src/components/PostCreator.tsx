@@ -36,8 +36,6 @@ const PostCreator: React.FC<PostCreatorProps> = ({
     
     setIsPosting(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
       onPost(content.trim());
       setContent('');
     } catch (error) {
