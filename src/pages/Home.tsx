@@ -1,16 +1,23 @@
 import React from 'react';
 import { useUser } from '../contexts/UserContext';
 import { usePosts } from '../contexts/PostContext';
+import { createPost } from '../data/mockPosts';
 import PostCreator from '../components/PostCreator';
-import PostFeed from '../components/PostFeed';
+import InfiniteScrollPosts from '../components/InfiniteScrollPosts';
 
 const Home: React.FC = () => {
   const { currentUser } = useUser();
-  const { posts, addPost } = usePosts();
+  const { posts, addPost, setPosts } = usePosts();
 
-  const handleCreatePost = (content: string) => {
+  const handleCreatePost = (content: string, imageUrl?: string) => {
     if (currentUser) {
-      addPost(content, currentUser.id);
+      if (imageUrl) {
+        const postWithImage = createPost(currentUser.id, content);
+        postWithImage.imageUrl = imageUrl;
+        setPosts(prevPosts => [postWithImage, ...prevPosts]);
+      } else {
+        addPost(content, currentUser.id);
+      }
     }
   };
 
@@ -20,7 +27,7 @@ const Home: React.FC = () => {
       <PostCreator onPost={handleCreatePost} />
 
       {/* Post Feed */}
-      <PostFeed posts={posts} />
+      <InfiniteScrollPosts posts={posts} postsPerPage={3} />
     </div>
   );
 };

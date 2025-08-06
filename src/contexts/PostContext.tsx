@@ -4,6 +4,7 @@ import { mockPosts, createPost } from '../data/mockPosts';
 
 interface PostContextType {
   posts: Post[];
+  setPosts: React.Dispatch<React.SetStateAction<Post[]>>;
   addPost: (content: string, userId: string) => void;
   likePost: (postId: string, userId: string) => void;
   unlikePost: (postId: string, userId: string) => void;
@@ -23,7 +24,19 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
 
   const addPost = async (content: string, userId: string) => {
     try {
+      // Extract image URL if it's a data URL (from file upload)
+      let imageUrl: string | undefined;
+      const imageMatch = content.match(/data:image\/[^;]+;base64,[^"]+/);
+      if (imageMatch) {
+        imageUrl = imageMatch[0];
+        // Remove the data URL from content
+        content = content.replace(imageMatch[0], '').trim();
+      }
+      
       const newPost = createPost(userId, content);
+      if (imageUrl) {
+        newPost.imageUrl = imageUrl;
+      }
       setPosts(prevPosts => [newPost, ...prevPosts]);
     } catch (error) {
       console.error('Failed to add post:', error);
@@ -73,6 +86,7 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
 
   const value: PostContextType = {
     posts,
+    setPosts,
     addPost,
     likePost,
     unlikePost,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Share, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Share, MoreHorizontal, Clock } from 'lucide-react';
 import { Post } from '../types';
 import { useUser } from '../contexts/UserContext';
 import { usePosts } from '../contexts/PostContext';
@@ -7,6 +7,7 @@ import { useComments } from '../contexts/CommentContext';
 import { formatDate } from '../utils/formatters';
 import CommentModal from './CommentModal';
 import ShareModal from './ShareModal';
+import PostTimestamp from './PostTimestamp';
 
 interface PostFeedProps {
   posts: Post[];
@@ -39,6 +40,12 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
   const handleShareClick = (post: Post) => setSelectedSharePost(post);
   const closeShareModal = () => setSelectedSharePost(null);
   const handleShare = (postId: string) => sharePost(postId);
+
+  const formatPostContent = (content: string) => {
+    return content
+      .replace(/@(\w+)/g, '<span class="text-purple-600 dark:text-purple-400 font-semibold cursor-pointer hover:underline transition-colors">@$1</span>')
+      .replace(/#(\w+)/g, '<span class="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline transition-colors">#$1</span>');
+  };
 
   if (posts.length === 0) {
     return (
@@ -89,17 +96,16 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
                     <span className="text-gray-500 dark:text-gray-400 text-sm">
                       @{author.username}
                     </span>
-                    <span className="text-gray-400">·</span>
-                    <span className="text-gray-500 dark:text-gray-400 text-sm">
-                      {formatDate(post.timestamp)}
-                    </span>
+                    <span className="text-gray-400 dark:text-gray-500">·</span>
+                    <PostTimestamp timestamp={post.timestamp} />
                   </div>
 
                   {/* Post Content */}
                   <div className="mt-2">
-                    <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">
-                      {post.content}
-                    </p>
+                    <p 
+                      className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: formatPostContent(post.content) }}
+                    />
 
                     {/* Post Image */}
                     {post.imageUrl && (
