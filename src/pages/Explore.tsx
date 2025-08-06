@@ -19,7 +19,6 @@ const Explore: React.FC = () => {
 
   const allUsers = getAllUsers();
 
-  // Calculate trending posts (posts with high engagement)
   const trendingPosts = useMemo(() => {
     return [...posts]
       .sort((a, b) => {
@@ -30,19 +29,16 @@ const Explore: React.FC = () => {
       .slice(0, 10);
   }, [posts]);
 
-  // Latest posts
   const latestPosts = useMemo(() => {
     return [...posts]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, 10);
   }, [posts]);
 
-  // Posts with media
   const mediaPosts = useMemo(() => {
     return posts.filter(post => post.imageUrl);
   }, [posts]);
 
-  // Suggested users (users with most followers)
   const suggestedUsers = useMemo(() => {
     return [...allUsers]
       .sort((a, b) => b.followers - a.followers)
@@ -81,24 +77,26 @@ const Explore: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-4">
+    <div className="max-w-4xl mx-auto py-6 px-4 text-gray-900 dark:text-gray-100">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Explore</h1>
-        <p className="text-gray-600">Discover trending posts and connect with new people</p>
+        <h1 className="text-3xl font-bold mb-2">Explore</h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Discover trending posts and connect with new people
+        </p>
       </div>
 
       {/* Search Bar */}
       <div className="mb-6">
-        <SearchBar 
+        <SearchBar
           onSearchResults={handleSearchResults}
           placeholder="Search posts, people, and topics..."
         />
       </div>
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-        <div className="border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="flex space-x-8 px-6">
             {tabs.map((tab) => (
               <button
@@ -110,13 +108,13 @@ const Explore: React.FC = () => {
                 }}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center space-x-2 ${
                   activeTab === tab.key && !isSearching
-                    ? 'border-purple-500 text-purple-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-purple-500 text-purple-600 dark:text-purple-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />
                 <span>{tab.label}</span>
-                <span className="bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                <span className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 py-0.5 px-2 rounded-full text-xs">
                   {tab.count}
                 </span>
               </button>
@@ -128,14 +126,14 @@ const Explore: React.FC = () => {
         <div className="p-6">
           {isSearching ? (
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 className="text-lg font-semibold mb-4">
                 Search Results ({searchResults.length})
               </h2>
-              
+
               {/* User Results */}
               {searchResults.filter(r => r.type === 'user').length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-md font-medium text-gray-700 mb-3 flex items-center">
+                  <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3 flex items-center">
                     <Users className="h-4 w-4 mr-2" />
                     People
                   </h3>
@@ -145,15 +143,21 @@ const Explore: React.FC = () => {
                       .map((result, index) => {
                         const user = result.data;
                         return (
-                          <div key={index} className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                          >
                             <img
-                              src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=6366f1&color=fff&size=48`}
+                              src={
+                                user.avatar ||
+                                `https://ui-avatars.com/api/?name=${user.displayName}&background=6366f1&color=fff&size=48`
+                              }
                               alt={user.displayName}
                               className="w-12 h-12 rounded-full object-cover"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center space-x-2">
-                                <p className="font-semibold text-gray-900 truncate">
+                                <p className="font-semibold truncate text-gray-900 dark:text-white">
                                   {user.displayName}
                                 </p>
                                 {user.verified && (
@@ -162,8 +166,12 @@ const Explore: React.FC = () => {
                                   </div>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-500">@{user.username}</p>
-                              <p className="text-sm text-gray-600">{user.followers.toLocaleString()} followers</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                @{user.username}
+                              </p>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {user.followers.toLocaleString()} followers
+                              </p>
                             </div>
                           </div>
                         );
@@ -171,30 +179,38 @@ const Explore: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {/* Post Results */}
               {searchResults.filter(r => r.type === 'post').length > 0 && (
                 <div>
-                  <h3 className="text-md font-medium text-gray-700 mb-3">Posts</h3>
+                  <h3 className="text-md font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Posts
+                  </h3>
                   <PostFeed posts={getPostsForTab()} />
                 </div>
               )}
             </div>
           ) : activeTab === 'people' ? (
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Suggested People</h2>
+              <h2 className="text-lg font-semibold mb-4">Suggested People</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {suggestedUsers.map((user) => (
-                  <div key={user.id} className="bg-gray-50 rounded-xl p-6">
+                  <div
+                    key={user.id}
+                    className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6"
+                  >
                     <div className="flex items-center space-x-4 mb-4">
                       <img
-                        src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=6366f1&color=fff&size=64`}
+                        src={
+                          user.avatar ||
+                          `https://ui-avatars.com/api/?name=${user.displayName}&background=6366f1&color=fff&size=64`
+                        }
                         alt={user.displayName}
                         className="w-16 h-16 rounded-full object-cover"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                          <h3 className="font-semibold truncate text-gray-900 dark:text-white">
                             {user.displayName}
                           </h3>
                           {user.verified && (
@@ -203,16 +219,20 @@ const Explore: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        <p className="text-gray-500">@{user.username}</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          @{user.username}
+                        </p>
                       </div>
                     </div>
-                    
+
                     {user.bio && (
-                      <p className="text-gray-700 text-sm mb-4 line-clamp-2">{user.bio}</p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                        {user.bio}
+                      </p>
                     )}
-                    
+
                     <div className="flex items-center justify-between">
-                      <div className="flex space-x-4 text-sm text-gray-500">
+                      <div className="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <span>{user.followers.toLocaleString()} followers</span>
                         <span>{user.following.toLocaleString()} following</span>
                       </div>
@@ -226,19 +246,19 @@ const Explore: React.FC = () => {
             </div>
           ) : activeTab === 'media' ? (
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Posts with Media</h2>
+              <h2 className="text-lg font-semibold mb-4">Posts with Media</h2>
               {mediaPosts.length > 0 ? (
                 <PostFeed posts={mediaPosts} />
               ) : (
                 <div className="text-center py-12">
-                  <Hash className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-gray-500">No media posts found</p>
+                  <Hash className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+                  <p className="text-gray-500 dark:text-gray-400">No media posts found</p>
                 </div>
               )}
             </div>
           ) : (
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              <h2 className="text-lg font-semibold mb-4">
                 {activeTab === 'trending' ? 'Trending Posts' : 'Latest Posts'}
               </h2>
               <PostFeed posts={getPostsForTab()} />
