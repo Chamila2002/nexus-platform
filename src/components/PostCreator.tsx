@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Video, Calendar, MapPin, Smile, Bold, Italic } from 'lucide-react';
+import { Image, Video, Calendar, MapPin, Smile, Bold, Italic, X } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useToast } from '../contexts/ToastContext';
 import LoadingSpinner from './LoadingSpinner';
 
 interface PostCreatorProps {
-  onPost: (content: string) => void;
+  onPost: (content: string, imageUrl?: string) => void;
   placeholder?: string;
 }
 
@@ -13,17 +13,24 @@ const PostCreator: React.FC<PostCreatorProps> = ({
   onPost, 
   placeholder = "What's happening?" 
 }) => {
-  const { currentUser } = useUser();
+  const { currentUser, getAllUsers } = useUser();
   const { success, error } = useToast();
   const [content, setContent] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const CHARACTER_LIMIT = 280;
   const remainingChars = CHARACTER_LIMIT - content.length;
   const isOverLimit = remainingChars < 0;
   const isNearLimit = remainingChars <= 20 && remainingChars > 0;
   const isEmpty = content.trim().length === 0;
+
+  const allUsers = getAllUsers();
 
   // Auto-resize textarea
   useEffect(() => {
@@ -34,14 +41,28 @@ const PostCreator: React.FC<PostCreatorProps> = ({
     }
   }, [content]);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !isEmpty && !isOverLimit) {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [content, isEmpty, isOverLimit]);
+
   const handleSubmit = async () => {
     if (isEmpty || isOverLimit || !currentUser) return;
     
     setIsPosting(true);
     try {
-      onPost(content.trim());
+      onPost(content.trim(), imagePreview || undefined);
       success('Post created!', 'Your post has been shared successfully.');
       setContent('');
+      setImagePreview(null);
     } catch (err) {
       error('Failed to create post', 'Please try again.');
     } finally {
@@ -49,17 +70,82 @@ const PostCreator: React.FC<PostCreatorProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      handleSubmit();
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        error('File too large', 'Please select an image under 5MB.');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    
+    setContent(value);
+    setCursorPosition(cursorPos);
+
+    // Check for mentions
+    const beforeCursor = value.substring(0, cursorPos);
+    const mentionMatch = beforeCursor.match(/@(\w*)$/);
+    
+    if (mentionMatch) {
+      setMentionQuery(mentionMatch[1]);
+      setShowMentions(true);
+    } else {
+      setShowMentions(false);
+      setMentionQuery('');
+    }
+  };
+
+  const insertMention = (username: string) => {
+    const beforeCursor = content.substring(0, cursorPosition);
+    const afterCursor = content.substring(cursorPosition);
+    const beforeMention = beforeCursor.replace(/@\w*$/, '');
+    
+    const newContent = `${beforeMention}@${username} ${afterCursor}`;
+    setContent(newContent);
+    setShowMentions(false);
+    setMentionQuery('');
+    
+    // Focus back to textarea
+    setTimeout(() => {
+      textareaRef.current?.focus();
+      const newCursorPos = beforeMention.length + username.length + 2;
+      textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+  const formatContent = (text: string) => {
+    return text
+      .replace(/@(\w+)/g, '<span class="text-purple-600 dark:text-purple-400 font-medium">@$1</span>')
+      .replace(/#(\w+)/g, '<span class="text-blue-600 dark:text-blue-400 font-medium">#$1</span>');
+  };
+
+  const filteredUsers = allUsers.filter(user => 
+    user.username.toLowerCase().includes(mentionQuery.toLowerCase()) ||
+    user.displayName.toLowerCase().includes(mentionQuery.toLowerCase())
+  ).slice(0, 5);
 
   const getCharacterCountColor = () => {
     if (isOverLimit) return 'text-red-500';
     if (isNearLimit) return 'text-yellow-500';
-    return 'text-gray-400';
+    return 'text-gray-400 dark:text-gray-500';
   };
 
   const getProgressColor = () => {
@@ -85,25 +171,72 @@ const PostCreator: React.FC<PostCreatorProps> = ({
             />
           </div>
           
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 relative">
             <textarea
               ref={textareaRef}
               value={content}
-              onChange={(e) => setContent(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onChange={handleContentChange}
               placeholder={placeholder}
               className="w-full resize-none border-none outline-none text-xl placeholder-gray-500 dark:placeholder-gray-400 bg-transparent text-gray-900 dark:text-gray-100 min-h-[60px] max-h-[200px] transition-colors duration-200"
               style={{ lineHeight: '1.4' }}
             />
+
+            {/* Mention Dropdown */}
+            {showMentions && filteredUsers.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 max-h-48 overflow-y-auto">
+                {filteredUsers.map((user) => (
+                  <button
+                    key={user.id}
+                    onClick={() => insertMention(user.username)}
+                    className="w-full flex items-center space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-left"
+                  >
+                    <img
+                      src={user.avatar || `https://ui-avatars.com/api/?name=${user.displayName}&background=6366f1&color=fff&size=32`}
+                      alt={user.displayName}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{user.displayName}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Image Preview */}
+        {imagePreview && (
+          <div className="mt-4 relative">
+            <img
+              src={imagePreview}
+              alt="Upload preview"
+              className="w-full max-h-64 object-cover rounded-xl"
+            />
+            <button
+              onClick={removeImage}
+              className="absolute top-2 right-2 p-1 bg-black bg-opacity-50 rounded-full text-white hover:bg-opacity-70 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         {/* Formatting Options */}
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             {/* Media Options */}
             <div className="flex items-center space-x-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
               <button 
+                onClick={() => fileInputRef.current?.click()}
                 className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-all duration-200 hover:scale-110"
                 title="Add photo"
               >
@@ -130,7 +263,7 @@ const PostCreator: React.FC<PostCreatorProps> = ({
             </div>
 
             {/* Formatting Options */}
-            <div className="hidden sm:flex items-center space-x-2 border-l border-gray-200 pl-4">
+            <div className="hidden sm:flex items-center space-x-2 border-l border-gray-200 dark:border-gray-600 pl-4">
               <button 
                 className="p-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all duration-200 hover:scale-110"
                 title="Bold"
@@ -215,7 +348,7 @@ const PostCreator: React.FC<PostCreatorProps> = ({
         )}
 
         {/* Keyboard shortcut hint */}
-        <div className="mt-3 text-xs text-gray-400">
+        <div className="mt-3 text-xs text-gray-400 dark:text-gray-500">
           Press <kbd className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">⌘ + Enter</kbd> to post
         </div>
       </div>
