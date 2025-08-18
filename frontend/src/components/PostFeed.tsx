@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Share, MoreHorizontal } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Heart, MessageCircle, Share } from 'lucide-react';
 import { Post, User } from '../types';
 import { useUser } from '../contexts/UserContext';
-import { usePosts } from '../contexts/PostContext'; // keeps your like/share UI logic
+import { usePosts } from '../contexts/PostContext';
 import CommentModal from './CommentModal';
 import ShareModal from './ShareModal';
 import PostTimestamp from './PostTimestamp';
 import { Users, Posts as PostsApi } from '../services/api';
+import PostActions from './PostActions';
 
 interface PostFeedProps {
-  posts?: Post[]; // optional: if not provided, we fetch from backend
+  posts?: Post[]; // optional; if not provided, it fetches
 }
 
 const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
@@ -17,13 +18,19 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
   const { likePost, unlikePost, sharePost } = usePosts();
 
   const [fetchedPosts, setFetchedPosts] = useState<Post[]>([]);
+  const [localPosts, setLocalPosts] = useState<Post[]>([]);
   const [authors, setAuthors] = useState<Record<string, User>>({});
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [selectedSharePost, setSelectedSharePost] = useState<Post | null>(null);
 
   const sourcePosts = posts ?? fetchedPosts;
 
-  // Fetch posts if not provided by parent
+  // keep an editable local copy so edits/deletes reflect immediately
+  useEffect(() => {
+    setLocalPosts(sourcePosts);
+  }, [sourcePosts]);
+
+  // fetch when not provided
   useEffect(() => {
     if (posts?.length) return;
     (async () => {
@@ -32,7 +39,7 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
     })();
   }, [posts]);
 
-  // Load users once for author display
+  // load users
   useEffect(() => {
     (async () => {
       const list = await Users.list();
@@ -49,6 +56,18 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
     const isLiked = post.likedBy.includes(user.id);
     if (isLiked) unlikePost(post.id, user.id);
     else likePost(post.id, user.id);
+    // local optimistic count
+    setLocalPosts((prev) =>
+      prev.map((p) =>
+        p.id === post.id
+          ? {
+              ...p,
+              likedBy: isLiked ? p.likedBy.filter((id) => id !== user.id) : [...p.likedBy, user.id],
+              likes: isLiked ? Math.max(0, (p.likes ?? 0) - 1) : (p.likes ?? 0) + 1,
+            }
+          : p
+      )
+    );
   };
 
   const handleCommentClick = (post: Post) => setSelectedPost(post);
@@ -62,7 +81,15 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
       .replace(/@(\w+)/g, '<span class="text-purple-600 dark:text-purple-400 font-semibold cursor-pointer hover:underline transition-colors">@$1</span>')
       .replace(/#(\w+)/g, '<span class="text-blue-600 dark:text-blue-400 font-semibold cursor-pointer hover:underline transition-colors">#$1</span>');
 
-  if (sourcePosts.length === 0) {
+  const onEdited = (updated: Post) => {
+    setLocalPosts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)));
+  };
+
+  const onDeleted = (id: string) => {
+    setLocalPosts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  if (localPosts.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center transition-colors duration-300">
         <p className="text-gray-500 dark:text-gray-400">No posts yet. Be the first to share something!</p>
@@ -72,7 +99,7 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
 
   return (
     <div className="space-y-4">
-      {sourcePosts.map((post) => {
+      {localPosts.map((post) => {
         const author = getUserById(post.userId);
         const isLiked = user ? post.likedBy.includes(user.id) : false;
         const commentCount = post.comments ?? 0;
@@ -104,6 +131,10 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
                     <span className="text-gray-500 dark:text-gray-400 text-sm">@{author.username}</span>
                     <span className="text-gray-400 dark:text-gray-500">·</span>
                     <PostTimestamp timestamp={post.timestamp} />
+                    {/* Actions (Edit/Delete) on the right */}
+                    <div className="ml-auto">
+                      <PostActions post={post} onEdited={onEdited} onDeleted={onDeleted} />
+                    </div>
                   </div>
 
                   {/* Content */}
@@ -119,7 +150,7 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
                     )}
                   </div>
 
-                  {/* Actions */}
+                  {/* Actions Row */}
                   <div className="flex items-center justify-between mt-4 max-w-md">
                     <button
                       onClick={() => handleCommentClick(post)}
@@ -155,12 +186,6 @@ const PostFeed: React.FC<PostFeedProps> = ({ posts }) => {
                         <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                       </div>
                       <span className="text-sm">{post.likes}</span>
-                    </button>
-
-                    <button className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors group">
-                      <div className="p-2 rounded-full group-hover:bg-gray-50 dark:group-hover:bg-gray-700 transition-colors">
-                        <MoreHorizontal className="h-5 w-5" />
-                      </div>
                     </button>
                   </div>
                 </div>

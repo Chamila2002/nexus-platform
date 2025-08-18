@@ -88,6 +88,17 @@ export const Posts = {
     const raw = await request<any>(`/api/posts/${id}`);
     return toPost(raw);
   },
+  update: async (id: string, data: { content?: string; imageUrl?: string }) => {
+    const raw = await request<any>(`/api/posts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    // @ts-ignore – assumes your adapters exist in this file
+    return (typeof toPost === "function" ? toPost(raw) : raw) as any;
+  },
+  remove: async (id: string) => {
+    return request<{ ok: boolean }>(`/api/posts/${id}`, { method: "DELETE" });
+  },
   comments: {
     list: async (postId: string): Promise<Comment[]> => {
       const raw = await request<any[]>(`/api/posts/${postId}/comments`);
