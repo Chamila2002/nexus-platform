@@ -33,7 +33,9 @@ function toUser(s: any): User {
 
 function toPost(s: any): Post {
   const author = s.author ?? s.user ?? null;
-  const userId = typeof author === "object" ? (author._id ?? author.id) : (s.userId ?? s.authorId);
+  const userId =
+    typeof author === "object" ? (author._id ?? author.id) : (s.userId ?? s.authorId);
+
   return {
     id: s._id ?? s.id,
     userId,
@@ -76,40 +78,71 @@ export const Users = {
 };
 
 export const Posts = {
-  list: async (page = 1, limit = 10): Promise<{ items: Post[]; page: number; limit: number; total: number }> => {
+  list: async (
+    page = 1,
+    limit = 10
+  ): Promise<{ items: Post[]; page: number; limit: number; total: number }> => {
     const raw = await request<any>(`/api/posts?page=${page}&limit=${limit}`);
     return { ...raw, items: (raw.items ?? []).map(toPost) };
   },
+
   create: async (data: { authorId: string; content: string; imageUrl?: string }): Promise<Post> => {
     const raw = await request<any>("/api/posts", { method: "POST", body: JSON.stringify(data) });
     return toPost(raw);
   },
+
   one: async (id: string): Promise<Post> => {
     const raw = await request<any>(`/api/posts/${id}`);
     return toPost(raw);
   },
-  update: async (id: string, data: { content?: string; imageUrl?: string }) => {
+
+  update: async (id: string, data: { content?: string; imageUrl?: string }): Promise<Post> => {
     const raw = await request<any>(`/api/posts/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
-    // @ts-ignore – assumes your adapters exist in this file
-    return (typeof toPost === "function" ? toPost(raw) : raw) as any;
+    return toPost(raw);
   },
-  remove: async (id: string) => {
+
+  remove: async (id: string): Promise<{ ok: boolean }> => {
     return request<{ ok: boolean }>(`/api/posts/${id}`, { method: "DELETE" });
   },
+
   comments: {
     list: async (postId: string): Promise<Comment[]> => {
       const raw = await request<any[]>(`/api/posts/${postId}/comments`);
       return raw.map(toComment);
     },
-    create: async (postId: string, data: { authorId: string; content: string }): Promise<Comment> => {
+
+    create: async (
+      postId: string,
+      data: { authorId: string; content: string }
+    ): Promise<Comment> => {
       const raw = await request<any>(`/api/posts/${postId}/comments`, {
         method: "POST",
         body: JSON.stringify(data),
       });
       return toComment(raw);
+    },
+
+    /** NEW: edit a comment */
+    update: async (
+      postId: string,
+      commentId: string,
+      data: { content: string }
+    ): Promise<Comment> => {
+      const raw = await request<any>(`/api/posts/${postId}/comments/${commentId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+      return toComment(raw);
+    },
+
+    /** NEW: delete a comment */
+    remove: async (postId: string, commentId: string): Promise<{ ok: boolean }> => {
+      return request<{ ok: boolean }>(`/api/posts/${postId}/comments/${commentId}`, {
+        method: "DELETE",
+      });
     },
   },
 };
