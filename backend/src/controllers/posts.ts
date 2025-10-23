@@ -23,8 +23,18 @@ export async function listPosts(req: Request, res: Response) {
 
 /** POST /api/posts */
 export async function createPost(req: Request, res: Response) {
-  const { authorId, content, imageUrl } = req.body;
-  const created = await Post.create({ author: authorId, content, imageUrl });
+  const { authorId, content, imageUrl } = req.body as {
+    authorId?: string;
+    content?: string;
+    imageUrl?: string;
+  };
+
+  if (!authorId) return res.status(400).json({ message: "authorId is required" });
+  if (typeof content !== "string" || !content.trim()) {
+    return res.status(400).json({ message: "content is required" });
+  }
+
+  const created = await Post.create({ author: authorId, content: content.trim(), imageUrl });
   res.status(201).json(created);
 }
 
@@ -42,11 +52,7 @@ export async function updatePost(req: Request, res: Response) {
   if (content !== undefined) update.content = content;
   if (imageUrl !== undefined) update.imageUrl = imageUrl;
 
-  const post = await Post.findByIdAndUpdate(
-    req.params.id,
-    { $set: update },
-    { new: true }
-  )
+  const post = await Post.findByIdAndUpdate(req.params.id, { $set: update }, { new: true })
     .populate("author")
     .lean();
 
@@ -70,10 +76,15 @@ export async function deletePost(req: Request, res: Response) {
 
 /** POST /api/posts/:id/comments */
 export async function addComment(req: Request, res: Response) {
-  const { content, authorId } = req.body;
+  const { content, authorId } = req.body as { content?: string; authorId?: string };
   const postId = req.params.id;
 
-  const comment = await Comment.create({ post: postId, author: authorId, content });
+  if (!authorId) return res.status(400).json({ message: "authorId is required" });
+  if (typeof content !== "string" || !content.trim()) {
+    return res.status(400).json({ message: "content is required" });
+  }
+
+  const comment = await Comment.create({ post: postId, author: authorId, content: content.trim() });
   await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: 1 } });
 
   res.status(201).json(comment);
@@ -87,4 +98,39 @@ export async function listComments(req: Request, res: Response) {
     .sort({ createdAt: -1 })
     .lean();
   res.json(comments);
+}
+
+/** PUT /api/posts/:id/comments/:commentId  (edit a comment) */
+export async function updateComment(req: Request, res: Response) {
+  const postId = req.params.id;
+  const commentId = req.params.commentId;
+  const { content } = req.body as { content?: string };
+
+  if (typeof content !== "string" || !content.trim()) {
+    return res.status(400).json({ message: "content is required" });
+  }
+
+  const updated = await Comment.findOneAndUpdate(
+    { _id: commentId, post: postId },
+    { $set: { content: content.trim() } },
+    { new: true }
+  )
+    .populate("author")
+    .lean();
+
+  if (!updated) return res.status(404).json({ message: "Comment not found" });
+  res.json(updated);
+}
+
+/** DELETE /api/posts/:id/comments/:commentId  (delete a comment) */
+export async function deleteComment(req: Request, res: Response) {
+  const postId = req.params.id;
+  const commentId = req.params.commentId;
+
+  const deleted = await Comment.findOneAndDelete({ _id: commentId, post: postId }).lean();
+  if (!deleted) return res.status(404).json({ message: "Comment not found" });
+
+  await Post.findByIdAndUpdate(postId, { $inc: { commentsCount: -1 } });
+
+  res.json({ ok: true });
 }

@@ -1,5 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Heart, MessageCircle } from 'lucide-react';
+import {
+  X,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Check,
+  XCircle,
+} from 'lucide-react';
 import { Post, Comment as CommentType, User } from '../types';
 import { useUser } from '../contexts/UserContext';
 import { Users, Posts } from '../services/api';
@@ -18,6 +27,11 @@ const CommentModal: React.FC<CommentModalProps> = ({ post, isOpen, onClose }) =>
   const [comments, setComments] = useState<CommentType[]>([]);
   const [commentContent, setCommentContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // actions state
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -75,7 +89,8 @@ const CommentModal: React.FC<CommentModalProps> = ({ post, isOpen, onClose }) =>
         authorId: user.id,
         content: commentContent.trim(),
       });
-      setComments((prev) => [...prev, created]);
+      // newest first (matches backend sort: createdAt desc)
+      setComments((prev) => [created, ...prev]);
       setCommentContent('');
     } catch (err) {
       console.error('Failed to submit comment:', err);
@@ -91,14 +106,47 @@ const CommentModal: React.FC<CommentModalProps> = ({ post, isOpen, onClose }) =>
       prev.map((c) => {
         if (c.id !== commentId) return c;
         const likedBy = new Set(c.likedBy);
-        if (isLiked) {
-          likedBy.delete(user.id);
-        } else {
-          likedBy.add(user.id);
-        }
+        if (isLiked) likedBy.delete(user.id);
+        else likedBy.add(user.id);
         return { ...c, likedBy: Array.from(likedBy), likes: Array.from(likedBy).length };
       })
     );
+  };
+
+  // --- edit/delete helpers ---
+  const startEdit = (c: CommentType) => {
+    setEditingId(c.id);
+    setEditingText(c.content);
+    setMenuOpenFor(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  const saveEdit = async (c: CommentType) => {
+    if (!editingText.trim()) return;
+    try {
+      const updated = await Posts.comments.update(post.id, c.id, { content: editingText.trim() });
+      setComments((prev) => prev.map((x) => (x.id === c.id ? { ...x, ...updated } : x)));
+      setEditingId(null);
+      setEditingText('');
+    } catch (e) {
+      console.error('Failed to update comment', e);
+    }
+  };
+
+  const deleteComment = async (c: CommentType) => {
+    const ok = confirm('Delete this comment?');
+    if (!ok) return;
+    try {
+      await Posts.comments.remove(post.id, c.id);
+      setComments((prev) => prev.filter((x) => x.id !== c.id));
+      setMenuOpenFor(null);
+    } catch (e) {
+      console.error('Failed to delete comment', e);
+    }
   };
 
   const getUserById = (userId: string) => allUsers.find((u) => u.id === userId);
@@ -139,7 +187,9 @@ const CommentModal: React.FC<CommentModalProps> = ({ post, isOpen, onClose }) =>
                   )}
                   <span className="text-gray-500 dark:text-gray-400 text-sm">@{postAuthor.username}</span>
                   <span className="text-gray-400">·</span>
-                  <span className="text-gray-500 dark:text-gray-400 text-sm">{formatDate(post.timestamp)}</span>
+                  <span className="text-gray-500 dark:text-gray-400 text-sm">
+                    {formatDate(post.createdAt ?? post.timestamp)}
+                  </span>
                 </div>
                 <div className="mt-2">
                   <p className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap leading-relaxed">{post.content}</p>
@@ -212,7 +262,11 @@ const CommentModal: React.FC<CommentModalProps> = ({ post, isOpen, onClose }) =>
                 {comments.map((comment) => {
                   const commentAuthor = allUsers.find((u) => u.id === comment.userId);
                   const isLiked = user ? comment.likedBy.includes(user.id) : false;
+                  const isOwner = user?.id === comment.userId;
                   if (!commentAuthor) return null;
+
+                  const isEditing = editingId === comment.id;
+
                   return (
                     <div key={comment.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                       <div className="flex space-x-3">
@@ -236,9 +290,69 @@ const CommentModal: React.FC<CommentModalProps> = ({ post, isOpen, onClose }) =>
                             )}
                             <span className="text-gray-500 dark:text-gray-400 text-sm">@{commentAuthor.username}</span>
                             <span className="text-gray-400">·</span>
-                            <span className="text-gray-500 dark:text-gray-400 text-sm">{formatDate(comment.createdAt)}</span>
+                            <span className="text-gray-500 dark:text-gray-400 text-sm">
+                              {formatDate(comment.createdAt)}
+                            </span>
+
+                            {/* Actions menu (owner only) */}
+                            {isOwner && (
+                              <div className="ml-auto relative">
+                                <button
+                                  onClick={() => setMenuOpenFor((v) => (v === comment.id ? null : comment.id))}
+                                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                >
+                                  <MoreHorizontal className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                                </button>
+                                {menuOpenFor === comment.id && (
+                                  <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                    <button
+                                      onClick={() => startEdit(comment)}
+                                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-left"
+                                    >
+                                      <Pencil className="h-4 w-4" /> Edit
+                                    </button>
+                                    <button
+                                      onClick={() => deleteComment(comment)}
+                                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 text-left text-red-600"
+                                    >
+                                      <Trash2 className="h-4 w-4" /> Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <p className="text-gray-900 dark:text-gray-100 mt-1 leading-relaxed">{comment.content}</p>
+
+                          {/* Content / Edit box */}
+                          {!isEditing ? (
+                            <p className="text-gray-900 dark:text-gray-100 mt-1 leading-relaxed">{comment.content}</p>
+                          ) : (
+                            <div className="mt-2">
+                              <textarea
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                className="w-full border rounded-lg p-2 bg-transparent text-gray-900 dark:text-gray-100"
+                                rows={3}
+                              />
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={() => saveEdit(comment)}
+                                  disabled={!editingText.trim()}
+                                  className="px-3 py-1.5 rounded-full bg-purple-600 text-white text-sm disabled:opacity-50 inline-flex items-center gap-1"
+                                >
+                                  <Check className="h-4 w-4" /> Save
+                                </button>
+                                <button
+                                  onClick={cancelEdit}
+                                  className="px-3 py-1.5 rounded-full border text-sm inline-flex items-center gap-1"
+                                >
+                                  <XCircle className="h-4 w-4" /> Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Like */}
                           <div className="flex items-center space-x-4 mt-2">
                             <button
                               onClick={() => handleCommentLike(comment.id, isLiked)}
