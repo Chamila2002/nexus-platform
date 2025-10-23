@@ -1,0 +1,138 @@
+# === Dependencies ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# === Environment Variables & Sensitive Data ===
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+*.env
+*.env.*
+
+# === Database ===
+*.sqlite
+*.sqlite3
+*.db
+*.sql
+*.dump
+
+# === Backend Specific ===
+backend/.env
+backend/dist/
+backend/build/
+backend/uploads/
+backend/logs/
+backend/*.log
+backend/coverage/
+backend/.nyc_output/
+
+# === Frontend Specific ===
+frontend/.env
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/dist-ssr/
+frontend/*.local
+frontend/coverage/
+
+# === Build Outputs ===
+dist/
+build/
+out/
+.next/
+.nuxt/
+.cache/
+
+# === Logs ===
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# === OS Generated Files ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# === IDE & Editor Files ===
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.sublime-workspace
+.sublime-project
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# === Testing & Coverage ===
+coverage/
+.nyc_output/
+*.lcov
+.jest-cache/
+__snapshots__/
+
+# === Temporary Files ===
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+
+# === Security & Keys ===
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
+credentials.json
+serviceAccountKey.json
+firebase-adminsdk.json
+
+# === TypeScript ===
+*.tsbuildinfo
+.tscache/
+
+# === Miscellaneous ===
+.vercel
+.netlify
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
