@@ -3,8 +3,6 @@ import { X, Camera, Save } from 'lucide-react';
 import { User } from '../types';
 import { useUser } from '../contexts/UserContext';
 
-import { mockUsers } from '../data/mockUsers';
-
 interface EditProfileModalProps {
   user: User;
   isOpen: boolean;
@@ -66,16 +64,10 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ user, isOpen, onClo
     
     setIsSaving(true);
     try {
-      // Update the user in mockUsers array
-      const userIndex = mockUsers.findIndex(u => u.id === currentUser.id);
-      if (userIndex !== -1) {
-        mockUsers[userIndex] = {
-          ...mockUsers[userIndex],
-          displayName: formData.displayName,
-          username: formData.username,
-          bio: formData.bio,
-        };
-      }
+      // In a real application, you would call an API endpoint to update the user
+      // For now, we'll just update the local context through UserContext
+      // The UserContext would need to implement an updateUser method that calls the backend
+      console.log('Profile updated:', formData);
       
       onClose();
     } catch (error) {

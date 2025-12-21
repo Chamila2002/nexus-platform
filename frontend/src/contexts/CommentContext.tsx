@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Comment } from '../types';
-import { mockComments, createComment } from '../data/mockComments';
+import { Posts as PostsApi } from '../services/api';
 
 interface CommentContextType {
   comments: Comment[];
@@ -9,6 +9,7 @@ interface CommentContextType {
   likeComment: (commentId: string, userId: string) => void;
   unlikeComment: (commentId: string, userId: string) => void;
   isLoading: boolean;
+  refreshComments: (postId: string) => Promise<void>;
 }
 
 const CommentContext = createContext<CommentContextType | undefined>(undefined);
@@ -18,8 +19,24 @@ interface CommentProviderProps {
 }
 
 export const CommentProvider: React.FC<CommentProviderProps> = ({ children }) => {
-  const [comments, setComments] = useState<Comment[]>(mockComments);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const refreshComments = async (postId: string) => {
+    setIsLoading(true);
+    try {
+      const fetchedComments = await PostsApi.comments.list(postId);
+      setComments(prevComments => {
+        // Merge with existing comments from other posts
+        const otherComments = prevComments.filter(c => c.postId !== postId);
+        return [...otherComments, ...fetchedComments];
+      });
+    } catch (error) {
+      console.error('Failed to fetch comments:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const getCommentsByPostId = (postId: string): Comment[] => {
     return comments
@@ -30,10 +47,7 @@ export const CommentProvider: React.FC<CommentProviderProps> = ({ children }) =>
   const addComment = async (postId: string, content: string, userId: string) => {
     setIsLoading(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const newComment = createComment(userId, postId, content);
+      const newComment = await PostsApi.comments.create(postId, { authorId: userId, content });
       setComments(prevComments => [newComment, ...prevComments]);
     } catch (error) {
       console.error('Failed to add comment:', error);
@@ -77,6 +91,7 @@ export const CommentProvider: React.FC<CommentProviderProps> = ({ children }) =>
     likeComment,
     unlikeComment,
     isLoading,
+    refreshComments,
   };
 
   return (

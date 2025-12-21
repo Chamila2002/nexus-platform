@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Post } from '../types';
-import { mockPosts, createPost } from '../data/mockPosts';
+import { Posts as PostsApi } from '../services/api';
 
 interface PostContextType {
   posts: Post[];
@@ -10,6 +10,7 @@ interface PostContextType {
   unlikePost: (postId: string, userId: string) => void;
   sharePost: (postId: string) => void;
   isLoading: boolean;
+  refreshPosts: () => Promise<void>;
 }
 
 const PostContext = createContext<PostContextType | undefined>(undefined);
@@ -19,8 +20,24 @@ interface PostProviderProps {
 }
 
 export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const refreshPosts = async () => {
+    setIsLoading(true);
+    try {
+      const response = await PostsApi.list(1, 50);
+      setPosts(response.items);
+    } catch (error) {
+      console.error('Failed to fetch posts:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshPosts();
+  }, []);
 
   const addPost = async (content: string, userId: string) => {
     try {
@@ -33,10 +50,7 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
         content = content.replace(imageMatch[0], '').trim();
       }
       
-      const newPost = createPost(userId, content);
-      if (imageUrl) {
-        newPost.imageUrl = imageUrl;
-      }
+      const newPost = await PostsApi.create({ authorId: userId, content, imageUrl });
       setPosts(prevPosts => [newPost, ...prevPosts]);
     } catch (error) {
       console.error('Failed to add post:', error);
@@ -92,6 +106,7 @@ export const PostProvider: React.FC<PostProviderProps> = ({ children }) => {
     unlikePost,
     sharePost,
     isLoading,
+    refreshPosts,
   };
 
   return (
