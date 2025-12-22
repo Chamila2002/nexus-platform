@@ -3,11 +3,24 @@ import { ChevronDown, LogOut, Users, CheckCircle } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 
 const UserSwitcher: React.FC = () => {
-  const { currentUser, getAllUsers, switchUser, logout } = useUser();
+  const { currentUser, getAllUsers, setCurrentUser } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const allUsers = getAllUsers();
 
   if (!currentUser) return null;
+
+  const handleSwitchUser = (userId: string) => {
+    const user = allUsers.find(u => u.id === userId);
+    if (user) {
+      setCurrentUser(user);
+      setIsOpen(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsOpen(false);
+  };
 
   return (
     <div className="relative">
@@ -60,10 +73,7 @@ const UserSwitcher: React.FC = () => {
             {allUsers.map((user) => (
               <button
                 key={user.id}
-                onClick={() => {
-                  switchUser(user.id);
-                  setIsOpen(false);
-                }}
+                onClick={() => handleSwitchUser(user.id)}
                 className={`w-full flex items-center space-x-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                   user.id === currentUser.id
                     ? 'bg-purple-50 dark:bg-purple-900/30'
@@ -101,10 +111,7 @@ const UserSwitcher: React.FC = () => {
           {/* Logout */}
           <div className="border-t border-gray-100 dark:border-gray-700 mt-2 pt-2">
             <button
-              onClick={() => {
-                logout();
-                setIsOpen(false);
-              }}
+              onClick={handleLogout}
               className="w-full flex items-center space-x-3 px-3 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
             >
               <LogOut className="h-4 w-4" />
